@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <style>
+      body {
+        background-color: black;
+        background-image: url("/Users/macbook/Documents/coding/canvas/map.png");
+        background-repeat: no-repeat;
+        background-attachment: fixed;
+        background-position: center;
+        border-radius: 10px;
+      }
+
+      canvas {
+        position: absolute;
+        margin: auto;
+        left: 0;
+        right: 0;
+        /* border: solid 1px white; */
+        /* border-radius: 10px; */
+        /* background-image: url("/Users/macbook/Documents/coding/canvas/map.png"); */
+        cursor: pointer;
+      }
+      button {
+        font-size: 12px;
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="canvas" width="704" height="540"></canvas>
+    <div>
+      <!-- <button>open</button> <button onclick="undraw()">undo</button> -->
+      <!-- <button onclick="downloadFile()">save</button> -->
+      <div><button id="save">Save</button></div>
+      <div><input type="file" id="load" /></div>
+    </div>
+    <script type="application/javascript">
+      var canvasWidth = 704;
+      var canvasHeight = 526;
+      var canvas = document.querySelector("canvas");
+      var ctx = canvas.getContext("2d");
+      var reader = new FileReader();
+      // var canvas = null;
+      var bounds = null;
+      // var ctx = null;
+      var hasLoaded = false;
+
+      var startX = 0;
+      var startY = 0;
+      var mouseX = 0;
+      var mouseY = 0;
+      var isDrawing = false;
+      var existingLines = [];
+      var savedCavas = [];
+      var background = new Image();
+      // var myMap = function() {
+      //   document.querySelector("canvas").innerHTML =
+      //     "<img src = '/Users/macbook/Documents/coding/canvas/map.png'>";
+      // };
+      // ctx.fillStyle = myMap();
+      ctx.fillStyle = "#00000000";
+      ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+      // background.setAttribute("crossOrigin", "anonymous");
+      // background.src = src;
+      // background.src = "/Users/macbook/Documents/coding/canvas/map.png";
+
+      function draw() {
+        ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+        // ctx.save();
+
+        ctx.strokeStyle = "black";
+        ctx.lineWidth = 5;
+        // background.src = "/Users/macbook/Documents/coding/canvas/map.png";
+
+        // ctx.drawImage(background, 0, 0);
+        ctx.beginPath();
+
+        for (let i = 0; i < existingLines.length; ++i) {
+          let line = existingLines[i];
+          ctx.moveTo(line.startX, line.startY);
+          ctx.lineTo(line.endX, line.endY);
+        }
+
+        ctx.stroke();
+
+        if (isDrawing) {
+          ctx.beginPath();
+          ctx.moveTo(startX, startY);
+          ctx.lineTo(mouseX, mouseY);
+          ctx.stroke();
+        }
+        // ctx.restore();
+      }
+      function undraw() {
+        ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+        existingLines.pop();
+        draw();
+      }
+
+      function onmousedown(e) {
+        if (hasLoaded && e.button === 0) {
+          if (!isDrawing) {
+            startX = e.clientX - bounds.left;
+            startY = e.clientY - bounds.top;
+
+            isDrawing = true;
+          }
+
+          draw();
+        }
+      }
+
+      function onmouseup(e) {
+        if (hasLoaded && e.button === 0) {
+          if (isDrawing) {
+            existingLines.push({
+              startX: startX,
+              startY: startY,
+              endX: mouseX,
+              endY: mouseY
+            });
+
+            isDrawing = false;
+          }
+
+          draw();
+        }
+      }
+
+      function onmousemove(e) {
+        if (hasLoaded) {
+          mouseX = e.clientX - bounds.left;
+          mouseY = e.clientY - bounds.top;
+
+          if (isDrawing) {
+            draw();
+          }
+        }
+      }
+
+      document.getElementById("save").addEventListener("click", function() {
+        // function downloadFile() {
+        // // canvas;
+        // var background = new Image();
+        // // background.setAttribute("crossOrigin", "anonymous");
+        // canvas = document.getElementById("canvas");
+        // background.src = "/Users/macbook/Documents/coding/canvas/map.png";
+        // var dataURL = document.getElementById("canvas").toDataURL();
+        // savedCavas.push(canvas.toDataURL());
+        // // var dataURL = canvas.toDataURL();
+        // console.log(dataURL);
+        var canvasContents = canvas.toDataURL(); // a data URL of the current canvas image
+        var data = { image: canvasContents, date: Date.now() };
+        var string = JSON.stringify(data);
+
+        // create a blob object representing the data as a JSON string
+        var file = new Blob([string], {
+          type: "application/json"
+        });
+
+        var a = document.createElement("a");
+        a.href = URL.createObjectURL(file);
+        a.download = "data.json";
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      });
+
+      document.getElementById("load").addEventListener("change", function() {
+        if (this.files[0]) {
+          // read the contents of the first file in the <input type="file">
+          reader.readAsText(this.files[0]);
+        }
+      });
+
+      reader.onload = function() {
+        var data = JSON.parse(reader.result);
+        var image = new Image();
+        image.onload = function() {
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          ctx.drawImage(image, 0, 0); // draw the new image to the screen
+        };
+        image.src = data.image; // data.image contains the data URL
+      };
+
+      window.onload = function() {
+        // let canvas = document.getElementById("canvas");
+        // canvas.background = background;
+        // canvas.width = canvasWidth;
+        // canvas.height = canvasHeight;
+        canvas.onmousedown = onmousedown;
+        canvas.onmouseup = onmouseup;
+        canvas.onmousemove = onmousemove;
+        bounds = canvas.getBoundingClientRect();
+        // ctx = canvas.getContext("2d");
+        // canvas.downloadFile = downloadFile;
+        hasLoaded = true;
+
+        draw();
+      };
+    </script>
+  </body>
+</html>
